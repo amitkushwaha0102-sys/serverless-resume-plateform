@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Job Application Portal</title>
+</head>
+<body>
+    <h1>Job Application Portal</h1>
+    <form id="applicationForm">
+        <input type="text" id="name" placeholder="Full Name" required><br>
+        <input type="email" id="email" placeholder="Email" required><br>
+        <select id="jobRole">
+            <option>Software Engineer</option>
+            <option>DevOps Engineer</option>
+            <option>Data Analyst</option>
+        </select><br>
+        <input type="file" id="resume" accept=".pdf" required><br>
+        <button type="submit">Submit Application</button>
+    </form>
+    <p id="status"></p>
+
+    <script>
+        const API_URL = 'YOUR_API_GATEWAY_URL';
+        
+        document.getElementById('applicationForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            document.getElementById('status').innerText = 'Uploading...';
+            
+            const file = document.getElementById('resume').files[0];
+            const email = document.getElementById('email').value;
+            const jobRole = document.getElementById('jobRole').value;
+            
+            // Step 1: Get presigned URL
+            const res = await fetch(API_URL + '/get-url', {
+                method: 'POST',
+                body: JSON.stringify({ file_name: file.name, email, job_role: jobRole })
+            });
+            const data = await res.json();
+            
+            // Step 2: Upload PDF directly to S3
+            await fetch(data.presigned_url, {
+                method: 'PUT',
+                body: file,
+                headers: { 'Content-Type': 'application/pdf' }
+            });
+            
+            document.getElementById('status').innerText = 'Application submitted successfully!';
+        });
+    </script>
+</body>
+</html>
