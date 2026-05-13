@@ -3,7 +3,7 @@ provider "aws" {
 }
 
 resource "aws_s3_bucket" "upload_bucket" {
-  bucket = "${var.project}-upload_bucket"
+  bucket = "${var.project}-upload-bucket"
 }
 
 resource "aws_s3_bucket" "frontend_bucket" {
@@ -64,4 +64,56 @@ resource "aws_iam_role_policy" "lambda_policy" {
   }
 ]
 })
+}
+resource "aws_apigatewayv2_api" "resume_api" {
+  name          = "${var.project}-api"
+  protocol_type = "HTTP"
+}
+
+resource "aws_apigatewayv2_integration" "lambda_integration" {
+  api_id             = aws_apigatewayv2_api.resume_api.id
+  integration_type   = "AWS_PROXY"
+  integration_uri    = aws_lambda_function.presigned_url.invoke_arn
+  integration_method = "POST"
+}
+
+resource "aws_apigatewayv2_route" "get_url_route" {
+  api_id    = aws_apigatewayv2_api.resume_api.id
+  route_key = "POST /get-url"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
+}
+
+resource "aws_apigatewayv2_stage" "default" {
+  api_id      = aws_apigatewayv2_api.resume_api.id
+  name        = "$default"
+  auto_deploy = true
+}
+
+resource "aws_lambda_function" "presigned_url" {
+  filename         = "../lambda/presigned_url/lambda.zip"
+  function_name    = "${var.project}-presigned-url"
+  role             = aws_iam_role.lambda_role.arn
+  handler          = "lambda_function.lambda_handler"
+  runtime          = "python3.11"
+
+  environment {
+    variables = {
+      UPLOAD_BUCKET = aws_s3_bucket.upload_bucket.bucket
+    }
+  }
+}
+
+resource "aws_lambda_function" "process_upload" {
+  filename         = "../lambda/process_upload/lambda.zip"
+  function_name    = "${var.project}-process-upload"
+  role             = aws_iam_role.lambda_role.arn
+  handler          = "lambda_function.lambda_handler"
+  runtime          = "python3.11"
+
+  environment {
+    variables = {
+      DYNAMODB_TABLE = aws_dynamodb_table.submission.name
+      SNS_TOPIC_ARN  = aws_sns_topic.hr_notification.arn
+    }
+  }
 }

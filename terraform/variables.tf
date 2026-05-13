@@ -3,12 +3,12 @@ variable "aws_region" {
   default     = "ap-south-1"
 }
 
-variable "serverless-resume-platform" {
+variable "project" {
   description = "serverless-resume-platform"
-  type     = "string"
+  default     = "serverless-resume-platform"
 }
 
 variable "hr_email" {
   description = "amitkushwaha0102@gmail.com"
-  default     = "email"
+  default     = "amitkushwaha0102@gmail.com"
 }
