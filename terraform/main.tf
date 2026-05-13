@@ -68,6 +68,11 @@ resource "aws_iam_role_policy" "lambda_policy" {
 resource "aws_apigatewayv2_api" "resume_api" {
   name          = "${var.project}-api"
   protocol_type = "HTTP"
+    cors_configuration {
+    allow_origins = ["*"]
+    allow_methods = ["POST", "OPTIONS"]
+    allow_headers = ["Content-Type"]
+  }
 }
 
 resource "aws_apigatewayv2_integration" "lambda_integration" {
